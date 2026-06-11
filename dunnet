@@ -439,7 +439,7 @@ switch ("$cmd")
                 if ( -f "${object}" || -l "${object}" ) then    
                     echo "You cannot take that."
                 else
-                    echo "I don't see that here."
+                    echo "I do not see that here."
                 endif
                 goto game_loop
             
@@ -457,7 +457,7 @@ switch ("$cmd")
                 if ( -f "${item}" || -l "${item}" ) then
                     echo "You cannot take that."
                 else
-                    echo "I don't see that here."
+                    echo "I do not see that here."
                 endif
                 goto game_loop
             default:
@@ -483,7 +483,7 @@ switch ("$cmd")
                 mv card.o chip.o cpu.o ../../usr/toukmond/ >& /dev/null
             endif
         else
-            echo "I don't see that here."
+            echo "I do not see that here."
         endif
 
         goto game_loop
@@ -825,6 +825,8 @@ switch ("$cmd")
         set pokey_cmd = $<:q
         set pokey_args = ( $pokey_cmd )
         set pokey_args_padded = ( $pokey_args "" "" "" "" )
+        
+        # Skip empty command
         if ( "$#pokey_args" == 0 ) goto pokey_loop
         
         switch ("$pokey_args[1]")
@@ -979,6 +981,7 @@ switch ("$cmd")
                         echo "drwxr-xr-x  3 root     staff           512 Jan 1 1970 dead-end"
                         echo "drwxr-xr-x  3 root     staff           512 Jan 1 1970 hidden-area"
                         breaksw
+                    
                     case /rooms/computer-room:
                     case /rooms/old-building-hallway:
                     case /rooms/bear-hangout:
@@ -992,7 +995,7 @@ switch ("$cmd")
                         echo "total 4"
                         echo "drwxr-xr-x  3 root     staff           512 Jan 1 1970 ."
                         echo "drwxr-xr-x  3 root     staff          2048 Jan 1 1970 .."
-                        echo "-rwxr-xr-x  1 root     staff          2048 Jan 1 1970 description"
+                        echo "-rwxr-xr-x  3 root     staff          2048 Jan 1 1970 description"
                         
                         # output objects information in the room
                         foreach file ( `sh -c "ls -tr $game_root/filesystem/pokey/${target_path}/*.o 2>/dev/null"` )
@@ -1152,7 +1155,7 @@ switch ("$cmd")
                 # 不是教授規定的
                 goto pokey_ftp
             default:
-                echo "$pokey_args[1]: not found."
+                echo "${pokey_args[1]}: not found."
                 goto pokey_loop
         endsw
         
