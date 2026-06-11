@@ -992,7 +992,7 @@ switch ("$cmd")
                         echo "total 4"
                         echo "drwxr-xr-x  3 root     staff           512 Jan 1 1970 ."
                         echo "drwxr-xr-x  3 root     staff          2048 Jan 1 1970 .."
-                        echo "-rw-r--r--  1 root     staff          2048 Jan 1 1970 description"
+                        echo "-rwxr-xr-x  1 root     staff          2048 Jan 1 1970 description"
                         
                         # output objects information in the room
                         foreach file ( `sh -c "ls -tr $game_root/filesystem/pokey/${target_path}/*.o 2>/dev/null"` )
@@ -1082,45 +1082,77 @@ switch ("$cmd")
             
             case cat:
                 if ( "$#pokey_args" < 2 ) then
-                    echo "cat: missing file name"
-                else
-                    set temp = `pwd -P`
-                    cd "$game_root/filesystem/pokey/$pokey_pwd"
-                    cat "$pokey_args_padded[2]"
-                    cd "$temp"
+                    echo "Usage: cat <ascii-file-name>"
+                    goto pokey_loop
                 endif
+
+                set file_name = "$pokey_args_padded[2]"
+
+                # Check the filename contains "/" or not.
+                #   Since cat command in pokey only support to read files in current directory,
+                #   if the filename contains "/", it should not be allowed.
+                if ( "$file_name" =~ */* ) then
+                    echo "cat: only files in current directory allowed."
+                    goto pokey_loop
+                endif
+
+                set file_path = "$game_root/filesystem/pokey/$pokey_pwd/$file_name"
+
+                # Check the target file exists
+                if( ! -e "$file_path" || -l "$file_path" ) then
+                    echo "File not found."
+                    goto pokey_loop
+                endif
+
+                # Check whether it is an ASCII file
+                if ( "$file_name" == "description" || "$file_name" == "panel_description" ) then
+                    tail -n +2 "$file_path" # skip the first line
+                else
+                    echo "Ascii files only."
+                endif
+
                 goto pokey_loop
                     
             case uncompress:
                 if ( "$#pokey_args" < 2 ) then
                     echo "uncompress: missing file name"
-                else
-                    set temp = `pwd -P`
-                    cd "$game_root/filesystem/pokey/$pokey_pwd"
-                    if ( "$pokey_args_padded[2]" == "paper.o.Z" || "$pokey_args_padded[2]" == "paper.o.gz" ) then
-                        if ( -f paper.o.gz ) then
-                            gunzip paper.o.gz
-                        else if ( -f paper.o.Z ) then
-                            gunzip paper.o.Z
+                    goto pokey_loop
+                endif
+                
+                set uncompress_file_path = "$game_root/filesystem/pokey/$pokey_pwd/$pokey_args_padded[2]"
+                if ( "$pokey_args_padded[2]" == "paper.o.Z" || "$pokey_args_padded[2]" == "paper.o.gz" ) then
+                    if ( -f "$uncompress_file_path" && ! -l "$uncompress_file_path" ) then
+                        gunzip "$uncompress_file_path" # uncompress
+
+                        if (-f "$game_root/filesystem/pokey/$pokey_pwd/paper.o" ) then
+                            # Update the timestamp of the uncompressed file, 
+                            # so that it will be listed in the correct order
+                            touch "$game_root/filesystem/pokey/$pokey_pwd/paper.o"  
                         else
-                            echo "uncompress: $pokey_args_padded[2]: No such file or directory"
+                            # It shouldn't run here!
+                            echo "Uncompress paper.o.Z or paper.o.gz failed!"
                         endif
                     else
-                        if ( -f "$pokey_args_padded[2]" ) then
-                            echo "uncompress: $pokey_args_padded[2]: format not supported"
-                        else
-                            echo "uncompress: $pokey_args_padded[2]: No such file or directory"
-                        endif
+                        echo "Uncompress command failed."
                     endif
-                    cd "$temp"
+                else
+                    echo "Uncompress command failed."
                 endif
                 goto pokey_loop
+            case rlogin:
+                # TODO
+                # 不是教授規定的
+                goto pokey_ftp
+            case ssh:
+                # TODO
+                # 不是教授規定的
+                goto pokey_ftp
             case ftp:
                 # TODO
                 # 不是教授規定的
                 goto pokey_ftp
             default:
-                echo "$pokey_args[1]: command not found"
+                echo "$pokey_args[1]: not found."
                 goto pokey_loop
         endsw
         
