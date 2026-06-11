@@ -929,7 +929,7 @@ switch ("$cmd")
                         echo "total 4"
                         echo "drwxr-xr-x  3 root     staff           512 Jan 1 1970 ."
                         echo "drwxr-xr-x  3 root     staff          2048 Jan 1 1970 .."
-                        echo "drwxr-xr-x  3 root     staff          2048 Jan 1 1970 toukmond"
+                        echo "drwxr-xr-x  3 root     restricted      512 Jan 1 1970 toukmond"
                         breaksw
 
                     case /usr/toukmond:
@@ -947,10 +947,13 @@ switch ("$cmd")
                         echo "-rwxr-xr-x  1 toukmond restricted    10423 Jan 1 1970 uncompress"
                         echo "-rwxr-xr-x  1 toukmond restricted    10423 Jan 1 1970 cat"
 
-                        # paper.o.Z
-                        if ( -f "$game_root/filesystem/pokey/usr/toukmond/paper.o.Z" ) then
-                            echo "-rwxr-xr-x  1 toukmond restricted        0 Jan 1 1970 paper.o.Z"    
-                        endif
+                        # paper.o.gz
+                        foreach file ( `sh -c "ls -tr $game_root/filesystem/pokey/usr/toukmond/paper.o.* 2>/dev/null"` )
+                            if ( -e "$file" ) then
+                                set object = `basename "$file"`
+                                echo "-rwxr-xr-x  1 toukmond restricted        0 Jan 1 1970 ${object}"
+                            endif
+                        end
 
                         # output objects information in inventory
                         foreach file ( `sh -c "ls -tr $game_root/filesystem/pokey/usr/toukmond/*.o 2>/dev/null"` )
