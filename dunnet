@@ -1,0 +1,1135 @@
+﻿#!/usr/bin/csh
+set nonomatch
+unset histchars
+
+# B113040045 許育菖
+# Unix HW1
+# 2026/06/24
+
+# Ensure running from script directory
+set script_dir = `dirname "$0"`
+cd "$script_dir"
+set game_root = `pwd -P`
+
+# Reset and untar filesystem for clean state
+if ( -f ~/filesystem.tar ) then
+    chmod -R 755 filesystem >& /dev/null
+    rm -rf filesystem
+    tar -xf ~/filesystem.tar >& /dev/null
+    ln -sf ../dead-end/trees filesystem/pokey/rooms/dead-end/coconut
+    ln -sf ../dead-end/trees filesystem/pokey/rooms/dead-end/coconuts
+    ln -sf ../e-w-dirt-road/trees filesystem/pokey/rooms/e-w-dirt-road/coconut
+    ln -sf ../e-w-dirt-road/trees filesystem/pokey/rooms/e-w-dirt-road/coconuts
+else if ( -f ./filesystem.tar ) then
+    chmod -R 755 filesystem >& /dev/null
+    rm -rf filesystem
+    tar -xf ./filesystem.tar >& /dev/null
+    ln -sf ../dead-end/trees filesystem/pokey/rooms/dead-end/coconut
+    ln -sf ../dead-end/trees filesystem/pokey/rooms/dead-end/coconuts
+    ln -sf ../e-w-dirt-road/trees filesystem/pokey/rooms/e-w-dirt-road/coconut
+    ln -sf ../e-w-dirt-road/trees filesystem/pokey/rooms/e-w-dirt-road/coconuts
+else if ( ! -d filesystem ) then
+    echo "Error: filesystem.tar not found and filesystem directory does not exist."
+    exit 1
+endif
+
+# Ensure coconut links exist
+if ( ! -e filesystem/pokey/rooms/dead-end/coconut ) then
+    ln -sf ../dead-end/trees filesystem/pokey/rooms/dead-end/coconut
+    ln -sf ../dead-end/trees filesystem/pokey/rooms/dead-end/coconuts
+    ln -sf ../e-w-dirt-road/trees filesystem/pokey/rooms/e-w-dirt-road/coconut
+    ln -sf ../e-w-dirt-road/trees filesystem/pokey/rooms/e-w-dirt-road/coconuts
+    ln -sf ../dead-end/trees filesystem/pokey/rooms/dead-end/coconuts
+    ln -sf ../e-w-dirt-road/trees filesystem/pokey/rooms/e-w-dirt-road/coconut
+    ln -sf ../e-w-dirt-road/trees filesystem/pokey/rooms/e-w-dirt-road/coconuts
+endif
+
+# Start room: Dead end
+cd filesystem/pokey/rooms/dead-end
+cd `pwd -P`
+
+# Global variables
+set computer_active = 0             # flag: whether the computer is active or not, used to determine if player can type commands into it
+set is_pokey_login = 0              # flag: whether the player has successfully login pokey or not, used to determine whether player can access pokey's filesystem and use pokey's commands
+set visited_rooms = ( `pwd -P` )    # store the physical path of visited rooms, used to determine whether to display the full description or the short description of the room.
+
+# Display start room info
+#   The starting point is set at "Dead end",
+#   so just display the description and the shovel object directly, 
+#   without checking for visited status and the object information.
+#   If  starting point is changeg in future, 
+#   the below code should be edited to reflect the new description! 
+echo ""
+cat description
+echo "There is a shovel here."
+
+
+# ===============================================================
+
+
+# Main game loop
+game_loop:
+
+echo -n ">"
+set input = $<:q                                # read user input, ":q" make it read as a pure string, without it wiil cause error
+set input = `echo "$input" | tr 'A-Z' 'a-z'`    # convert input to lowercase, so that the game is case-insensitive
+
+set args = ( $input )   # split input into arguments
+set args_padded = ( $args "" "" "" "" ) # pad arguments to avoid csh parsing issues with missing arguments
+                                        # e.g. 
+                                        #   type cmd "get key"
+                                        #   then args[3] will be empty, if we try to access args[2], it will cause an error!
+if ( "$#args" == 0 ) goto game_loop
+
+
+
+set cmd = "$args[1]"    # user command
+
+switch ("$cmd")
+    # Movement Commands
+    case u: # up
+    case d: # down
+    case n: # north
+    case s: # south
+    case e: # east
+    case w: # west
+    case ne: # northeast
+    case nw: # northwest
+    case se: # southeast
+    case sw: # southwest
+        if ( -e "$cmd" ) then   # If the link file exists
+            cd "$cmd" >& /dev/null      # Try to cd into the link, ">& /dev/null" is use to ignore the error message
+            if ( $status == 0 ) then    # If cd was successful
+                cd `pwd -P`
+                
+                set cur_room = `pwd -P` # current room physical path
+                set is_visited = 0      # flag: current room is visited or not
+                
+                # Check if the new room has been visited or not
+                foreach room ( $visited_rooms )
+                    if ( "$room" == "$cur_room" ) then
+                        set is_visited = 1
+                        break
+                    endif
+                end
+                if ( $is_visited == 0 ) then
+                    set visited_rooms = ( $visited_rooms "$cur_room " )
+                endif
+
+                # Display description
+                set cur_room_name = `pwd -P | sed 's|.*/||'` # delete all the text before the last "/" to get the current room name
+                if ( $is_visited == 1 || "$cur_room_name" == "hidden-area" ) then # the room is visited
+                    foreach f ( description .*description )
+                        if ( -f $f ) head -1 $f # print the first line of the description file
+                    end
+                else
+                    foreach f ( description .*description )
+                        if ( -f $f ) cat $f
+                    end
+                endif
+
+                
+                
+                # WATCHOUT!!!
+                # 這裡目前只有偵測board.o，所以拿起cpu並在其他地方放下後，需要一同放下cpu board card...等
+
+                # Display objects on ground
+                foreach object (`sh -c 'ls -tr *.o 2>/dev/null'`)
+                    switch ($object)
+                        case shovel.o:
+                            echo "There is a shovel here."
+                            breaksw
+                        case boulder.o:
+                            echo "There is a large boulder here."
+                            breaksw
+                        case food.o:
+                            echo "There is some food here."
+                            breaksw
+                        case bear.o:
+                            echo "There is a ferocious bear here!"
+                            breaksw
+                        case key.o:
+                            echo "There is a shiny brass key here."
+                            breaksw
+                        case bracelet.o:
+                            echo "There is an emerald bracelet here."
+                            breaksw
+                        case lamp.o:
+                            echo "There is a lamp nearby."
+                            breaksw
+                        case board.o:
+                            echo "There is a CPU card here."
+                            breaksw
+                    endsw
+                end
+            else
+                # If the below program is running,
+                # it means the permission of files are error!
+                echo "$cmd: Permission denied."
+            endif
+        else
+            echo "You can't go that way."
+        endif
+        goto game_loop
+
+
+    # Look command
+    case l:
+        # Dispslay room description
+        foreach f ( description .*description )
+            if ( -f $f ) cat $f
+        end
+
+        # Display objects on ground
+        foreach object (`sh -c 'ls -tr *.o 2>/dev/null'`)
+            switch ($object)
+                case shovel.o:
+                    echo "There is a shovel here."
+                    breaksw
+                case boulder.o:
+                    echo "There is a large boulder here."
+                    breaksw
+                case food.o:
+                    echo "There is some food here."
+                    breaksw
+                case bear.o:
+                    echo "There is a ferocious bear here!"
+                    breaksw
+                case key.o:
+                    echo "There is a shiny brass key here."
+                    breaksw
+                case bracelet.o:
+                    echo "There is an emerald bracelet here."
+                    breaksw
+                case lamp.o:
+                    echo "There is a lamp nearby."
+                    breaksw
+                case board.o:
+                    echo "There is a CPU card here."
+                    breaksw
+                default:
+                    # ignore the object, since it is a symbolic link
+            endsw
+        end
+        goto game_loop
+
+    
+    # Inventory command
+    case i:
+        echo "You currently have:"
+        set inv_dir = "../../usr/toukmond"
+        if ( -d "$inv_dir" ) then # if inv_dir exists
+            foreach file ( `sh -c "ls -tr $inv_dir/*.o 2>/dev/null"` )
+                
+                if ( ! -f "$file" || -l "$file" ) continue # skip non-simple files and symbolic links
+                
+                set object = `basename "$file"` # Get the filename without path
+
+                switch ("$object")
+                    case board.o:
+                        echo "A computer board"
+                        breaksw
+                    case bracelet.o:
+                        echo "A bracelet"
+                        breaksw
+                    case key.o:
+                        echo "A brass key"
+                        breaksw
+                    case lamp.o:
+                        echo "A lamp"
+                        breaksw
+                    case paper.o:
+                        echo "A slip of paper"
+                        breaksw
+                    case shovel.o:
+                        echo "A shovel"
+                        breaksw
+                    case food.o:
+                        echo "Some food"
+                        breaksw
+                    default:
+                        # It shouldn't run here!
+                        echo "Error: An unknown item"
+                endsw
+            end
+        endif
+        goto game_loop
+
+    # Examine command
+    case x:
+        # Too few arguments.
+        if ( "$#args" < 2 ) then
+            echo "You must supply an object."
+            goto game_loop
+        endif
+        
+        set item = "${args_padded[2]}"    # item name
+        set object = ""                 # object name (item name with .o suffix)
+
+        switch ("${item}")
+            # object files (*.o), need to add .o after ${item}
+            case lamp:
+            case bear:
+            case key:
+            case shovel:
+            case boulder:
+            case food:
+            case paper:
+                set object = "${item}.o"
+                breaksw
+            
+            case bracelet:
+            case emerald:
+                set object = "bracelet.o"
+                breaksw
+            
+            case board:
+            case card:
+            case chip:
+            case cpu:
+                set object = "board.o"
+                breaksw
+            
+            # normal files (non-object files), these files can't be interacted with.
+            case cabinet:
+            case computer:
+            case vax:
+            case coconut:
+            case coconuts:
+            case palm:
+            case trees:
+            case tree:
+            case bin:
+            case bins:
+                if ( -f "${item}" || -l "${item}" ) then
+                    cat "${item}"
+                else
+                    echo "I do not see that here."
+                endif
+                goto game_loop
+            default:
+                echo "I don't know what that is."
+                goto game_loop
+        endsw
+        
+        if ( -f "${object}" || -l "${object}" ) then
+            cat "${object}"
+        else if ( -f "../../usr/toukmond/${object}" || -l "../../usr/toukmond/${object}" ) then
+            cat "../../usr/toukmond/${object}"
+        else
+            echo "I don't see that here."
+        endif
+
+        goto game_loop
+
+    # Get command
+    case get:
+        if ( "$#args" < 2 ) then
+            echo "You must supply an object."
+            goto game_loop
+        endif
+        
+        set item = "${args_padded[2]}"
+        
+        # get all
+        if ( "${item}" == "all" ) then
+            set is_get = 0 # flag: whether there is any item can be get or not
+
+            set files = (`sh -c 'ls -tr *.o 2>/dev/null' | grep -v '^\.'`)  # objects array
+                                                                            # The objects started with a "." means the player can't get it currently,
+                                                                            # so use grep -v '^\.' to ignore the objects that is started with a "."
+            if ( "$#files" > 0 ) then
+                foreach object (${files})
+                    switch ("$object")
+                        # objects that can't be get
+                        case bear.o:
+                        case boulder.o:
+                            breaksw
+                        
+                        # objects that should be ignored
+                        case emerald.o:
+                            # handle bracelet.o
+                        case card.o:
+                        case chip.o:
+                        case cpu.o:
+                            # Ignore these three symbolic links, 
+                            # only handle board.o
+                            breaksw
+                        
+                        # objects that can be get
+                        default:
+                            # Move object and update timestamp
+                            mv ${object} ../../usr/toukmond/ >& /dev/null   # move the object file to inventory, ">& /dev/null" is use to ignore the error message
+                            touch "../../usr/toukmond/${object}"            # update the timestamp of the object file in inventory, 
+                                                                            # so that it will be listed in the correct order when player use "i" command to check inventory
+                            
+                            set name = "" # object name for printing take message
+                            switch ("$object")
+                                case food.o:
+                                    set name = "Some food"
+                                    breaksw
+                                case lamp.o:
+                                    set name = "A lamp"
+                                    breaksw
+                                case shovel.o:
+                                    set name = "A shovel"
+                                    breaksw
+                                case key.o:
+                                    set name = "A brass key"
+                                    breaksw
+                                case bracelet.o:
+                                    set name = "A bracelet"
+                                    breaksw
+                                case board.o:
+                                    set name = "A computer board"
+                                    breaksw
+                                case paper.o:
+                                    set name = "A slip of paper"
+                                    breaksw
+                            endsw    
+                            
+                            # print take message
+                            echo "${name}: Taken."
+
+                            # special objects handling
+                            if ( "${object}" == "key.o" ) then          
+                                chmod 755 ../../rooms/old-building-hallway # when player get the key, change the permission of old-building-hallway to allow player to enter it
+                            else if ( "${object}" == "bracelet.o" ) then
+                                mv emerald.o ../../usr/toukmond/ >& /dev/null
+                            else if ( "${object}" == "board.o" ) then
+                                mv card.o chip.o cpu.o ../../usr/toukmond/ >& /dev/null
+                            endif
+                            set is_get = 1
+                    endsw
+                end
+            endif
+            # There is nothing can be get
+            if ( ${is_get} == 0 ) echo "Nothing to take."
+
+            goto game_loop
+        endif
+        
+        # normal get command
+        switch ("${item}")
+            # object files (*.o), these files can be get and drop
+            case lamp:
+            case key:
+            case shovel:
+            case food:
+            case paper:
+                set object = "${item}.o"
+                breaksw
+            
+            case bracelet:
+            case emerald:
+                set object = "bracelet.o"
+                breaksw
+            
+            case board:
+            case card:
+            case chip:
+            case cpu:
+                set object = "board.o"
+                breaksw
+            
+            # object files, but they can't be get
+            case bear:
+            case boulder:
+                set object = "${item}.o"
+                if ( -f "${object}" || -l "${object}" ) then    
+                    echo "You cannot take that."
+                else
+                    echo "I don't see that here."
+                endif
+                goto game_loop
+            
+            # normal files (non-object files), these files can't be interacted with.
+            case cabinet:
+            case computer:
+            case vax:
+            case coconut:
+            case coconuts:
+            case palm:
+            case trees:
+            case tree:
+            case bin:
+            case bins:
+                if ( -f "${item}" || -l "${item}" ) then
+                    echo "You cannot take that."
+                else
+                    echo "I don't see that here."
+                endif
+                goto game_loop
+            default:
+                echo "I don't know what that is."
+                goto game_loop
+        endsw
+        
+        if ( -f "${object}" || -l "${object}" ) then
+            # Move object and update timestamp
+            mv ${object} ../../usr/toukmond/ >& /dev/null   # Move the object file to inventory, ">& /dev/null" is use to ignore the error message
+            touch "../../usr/toukmond/${object}"            # Update the timestamp of the object file in inventory, 
+                                                            # so that it will be listed in the correct order when player use "i" command to check inventory
+
+            # print take message
+            echo "Taken."
+
+            # special objects handling
+            if ( "${object}" == "key.o" ) then          
+                chmod 755 ../../rooms/old-building-hallway # when player get the key, change the permission of old-building-hallway to allow player to enter it
+            else if ( "${object}" == "bracelet.o" ) then
+                mv emerald.o ../../usr/toukmond/ >& /dev/null
+            else if ( "${object}" == "board.o" ) then
+                mv card.o chip.o cpu.o ../../usr/toukmond/ >& /dev/null
+            endif
+        else
+            echo "I don't see that here."
+        endif
+
+        goto game_loop
+
+    # Drop command
+    case drop:
+        if ( "$#args" < 2 ) then
+            echo "You must supply an object."
+            goto game_loop
+        endif
+        
+        set item = "${args_padded[2]}"
+        
+        switch ("${item}")
+            # object files (*.o), these files can be get and drop
+            case lamp:
+            case key:
+            case shovel:
+            case food:
+            case paper:
+                set object = "${item}.o"
+                breaksw
+            
+            case bracelet:
+            case emerald:
+                set object = "bracelet.o"
+                breaksw
+
+            case board:
+            case card:
+            case chip:
+            case cpu:
+                set object = "board.o"
+                breaksw
+            
+            # object files, but they can't be get
+            case bear:
+            case boulder:
+            
+            # normal files (non-object files), these files can't be interacted with.
+            case cabinet:
+            case computer:
+            case vax:
+            case coconut:
+            case coconuts:
+            case palm:
+            case trees:
+            case tree:
+            case bin:
+            case bins:
+                echo "You don't have that."
+                goto game_loop
+            default:
+                echo "I don't know what that is."
+                goto game_loop
+        endsw
+
+        if ( -f "../../usr/toukmond/${object}" ) then
+            # Move object and update timestamp
+            mv "../../usr/toukmond/${object}" ./ >& /dev/null # Move the object file to current room, ">& /dev/null" is use to ignore the error message
+            touch "${object}"                                 # Update the timestamp of the object file in current room, 
+                                                            # so that it will be listed in the correct order when player use "look" command to check objects on ground
+            echo "Done."
+
+            # special objects handling
+            switch ("${object}")
+                case food.o:
+                    set cur_room_name = `pwd -P | sed 's|.*/||'` # current room name
+                    if ( "$cur_room_name" == "bear-hangout" && -f bear.o ) then
+                        rm bear.o food.o                # delete the bear and the food
+                        mv .key.o key.o >& /dev/null    # make key available
+                        echo "The bear takes the food and runs away with it. He left something behind."
+                    endif
+                    breaksw
+                case key.o:
+                    chmod 755 ../../rooms/old-building-hallway # when player drop the key, change the permission of old-building-hallway
+                case bracelet.o:
+                    mv emerald.o . >& /dev/null
+                    breaksw
+                case board.o:
+                    mv card.o chip.o cpu.o . >& /dev/null
+                    breaksw
+            endsw
+        else
+            echo "You don't have that."
+            goto game_loop
+        endif
+        goto game_loop
+
+    # Dig command
+    case dig:
+        # Player doesn't have a shovel
+        if ( ! -f "../../usr/toukmond/shovel.o" ) then
+            echo "You have nothing with which to dig."
+        else
+            set room_name = `pwd -P | sed 's|.*/||'`
+            if ( "${room_name}" == "fork" && -f .board.o ) then
+                mv .board.o board.o
+                mv .card.o card.o
+                mv .chip.o chip.o
+                mv .cpu.o cpu.o
+                echo "I think you found something."
+            else
+                echo "Digging here reveals nothing."
+            endif
+        endif
+        goto game_loop
+
+    # Put command
+    case put:
+        # Too few arguments, lost object1
+        if ( "$#args" < 2 ) then
+            echo "You must supply an object"
+            goto game_loop
+        endif
+        
+        set item1 = "${args_padded[2]}"
+        
+        # select item to pick up
+        set object1 = ""
+        switch ("${item1}")
+            # object files (*.o), these files can be get and drop
+            case lamp:
+            case key:
+            case shovel:
+            case food:
+            case paper:
+                set object1 = "${item1}.o"
+                breaksw
+            
+            case bracelet:
+            case emerald:
+                set object1 = "bracelet.o"
+                breaksw
+
+            case board:
+            case card:
+            case chip:
+            case cpu:
+                set object1 = "board.o"
+                breaksw
+            
+            # object files, but they can't be get
+            case bear:
+            case boulder:
+            
+            # normal files (non-object files), these files can't be interacted with.
+            case cabinet:
+            case computer:
+            case vax:
+            case coconut:
+            case coconuts:
+            case palm:
+            case trees:
+            case tree:
+            case bin:
+            case bins:
+                echo "You don't have that."
+                goto game_loop
+            default:
+                echo "I don't know what that object is."
+                goto game_loop
+        endsw
+        
+        # check whether player has the object
+        if ( ! -f "../../usr/toukmond/${object1}" ) then
+            echo "You don't have that."
+            goto game_loop
+        endif
+        
+
+        # Finish check object1 
+        # Then, let's check object2
+
+        # Too few arguments, lost object2
+        if ( "$#args" < 4 ) then
+            echo "You must supply an indirect object."
+            goto game_loop
+        endif
+
+        # Check args[3]
+        # But processor said "We don't need to implement 'on'", so I ignore the third variable.
+        #if ( "$args_padded[3]" != "in" ) then
+        #    echo "You must supply an indirect object."
+        #    goto game_loop
+        #endif
+
+        set item2 = "${args_padded[4]}"
+        set object2 = ""
+        set object2_here = 0    # flag: whether the indirect object is here or not, 
+                                # used to determine whether the player can put the item on/into the indirect object
+        
+        switch ("${item2}")
+            case cabinet:
+            case computer:
+            case vax:
+                set cur_room_name = `pwd -P | sed 's|.*/||'`
+                if ( "${cur_room_name}" == "computer-room" ) then
+                    if ( "${object1}" == "board.o" ) then
+                        rm ../../usr/toukmond/board.o ../../usr/toukmond/card.o ../../usr/toukmond/chip.o ../../usr/toukmond/cpu.o >& /dev/null
+                        echo "The panel lights are flashing in a seemingly organized pattern." > .panel_description
+                        echo "As you put the CPU board in the computer, it immediately springs to life."
+                        echo "The lights start flashing, and the fans seem to startup."
+                        
+                        set computer_active = 1
+                    else
+                        # The two objects are available, but they don't have any special interaction
+                        echo "I don't know how to combine those objects.  Perhaps you should"
+                        echo "just try dropping it."
+                    endif
+                    goto game_loop
+                else
+                    echo "That indirect object is not here."
+                    goto game_loop
+                endif
+
+            # object files, but they can't be get
+            case bear:
+            case boulder:
+
+            # object files (*.o), these files can be get and drop
+            case lamp:
+            case key:
+            case shovel:
+            case food:
+            case paper:
+                set object2 = "${item2}.o"
+                breaksw
+            case bracelet:
+            case emerald:
+                set object2 = "bracelet.o"
+                breaksw
+            case board:
+            case card:
+            case chip:
+            case cpu:
+                set object2 = "board.o"
+                breaksw
+
+            # normal files (non-object files), these files can't be interacted with.
+            case coconut:
+            case coconuts:
+            case palm:
+            case trees:
+            case tree:
+            case bin:
+            case bins:
+                set object2 = "${item2}"
+                breaksw
+            default:
+                echo "I don't know what that indirect object is."
+                goto game_loop
+        endsw
+        
+        if ( -f "${object2}" || -f "../../usr/toukmond/${object2}" || -l "${object2}" ) then
+            # The two objects are available, but they don't have any special interaction
+            echo "I don't know how to combine those objects.  Perhaps you should"
+            echo "just try dropping it."
+        else
+            # The object2 is not here or in inventory
+            echo "That indirect object is not here."
+        endif
+        goto game_loop
+
+    # Type command
+    case type:
+        set cur_room_name = `pwd -P | sed 's|.*/||'`
+        
+        # The player is not in the computer room
+        if ( "${cur_room_name}" != "computer-room" ) then
+            echo "There is nothing here on which you could type."
+            goto game_loop
+        endif
+        
+        # The computer is not active
+        if ( ${computer_active} == 0 ) then
+            echo "You type on the keyboard, but your characters do not even echo."
+            goto game_loop
+        # The computer is login
+        else if ("$is_pokey_login" == 1) then
+            goto pokey_loop
+        endif
+        
+
+        
+        set login_times = 0 # count the login times
+                            # if the player fail to login after 3 times, 
+                            # the computer will turn off, and the player need to "type" again
+        
+    pokey_login:
+        if ( ${login_times} >= 3 ) then
+            goto game_loop
+        endif
+
+        echo ""
+        echo ""
+        echo "UNIX System V, Release 2.2 (pokey)"
+        echo ""
+
+        echo -n "login: "
+        set log_user = $<
+        echo -n "password: "
+        set log_pass = $<
+
+        if ( "$log_user" != "toukmond" ) then
+            echo "login incorrect."
+            set login_times = `expr ${login_times} + 1`
+            goto pokey_login
+        endif
+        if ( "$log_pass" != "robert" ) then
+            echo "login incorrect."
+            set login_times = `expr ${login_times} + 1`
+            goto pokey_login
+        endif
+
+        echo ""
+        echo "Welcome to Unix"
+        echo ""
+        echo "Please clean up your directories.  The filesystem is getting full."
+        echo "Our tcp/ip link to gamma is a little flaky, but seems to work."
+        echo "The current version of ftp can only send files from your home"
+        echo "directory, and deletes them after they are sent!  Be careful."
+        echo ""
+        echo "Note: Restricted bourne shell in use."
+        echo ""
+        
+        set is_pokey_login = 1
+
+        # pokey environment variables initialization
+        set pokey_pwd = "/usr/toukmond" # current directory in pokey, 
+                                        # initialized to "/usr/toukmond" since it's the home directory of toukmond, 
+                                        # and it's also the only directory that player can write in pokey at the beginning.
+        
+        set pokey_root = "$game_root/filesystem/pokey" # pokey root directory in real filesystem, used for path normalization in cd and ls command in pokey
+
+
+    pokey_loop:
+        echo -n '$ '
+        set pokey_cmd = $<:q
+        set pokey_args = ( $pokey_cmd )
+        set pokey_args_padded = ( $pokey_args "" "" "" "" )
+        if ( "$#pokey_args" == 0 ) goto pokey_loop
+        
+        switch ("$pokey_args[1]")
+            case exit:
+                echo ""
+                echo "You step back from the console."
+                echo ""
+                goto game_loop
+            
+            case echo:
+                if ( "$#pokey_args" < 2 ) then
+                    echo ""
+                else
+                    echo "$pokey_args_padded[2-]"
+                endif
+                goto pokey_loop
+
+            case pwd:
+                echo "$pokey_pwd"
+                goto pokey_loop
+
+            case ls: # ls [target_path]
+
+                set target_path = "$pokey_pwd"  # the path to list, it is a relative path in pokey, 
+                                                # default to current directory in pokey.
+
+                if ( "$#pokey_args" >= 2 ) then
+
+                    set ls_argument = "$pokey_args_padded[2]"
+
+                    # absolute path
+                    if ( "$ls_argument" =~ /* ) then # the argument starts with "/", treat it as an absolute path in pokey
+                        set target_path = "$ls_argument"
+
+                    # relative path
+                    else
+                        if ( "$pokey_pwd" == "/" ) then
+                            # If current directory in pokey is root, 
+                            # then don't add $pokey_pwd since there will be double '/' in the path. 
+                            # e.g. "//usr/toukmond"
+
+                            # But this case is actually not necessary, 
+                            # the next step will handle the double '/' to only one '/' in the path
+                            set target_path = "/$ls_argument"
+                        else
+                            set target_path = "$pokey_pwd/$ls_argument"
+                        endif
+                    endif
+                endif
+
+                # Check the target_path exists
+                set path_checker = `sh -c "cd '$pokey_root' && cd '.$target_path' 2>/dev/null && pwd -P"`
+                if ( "$path_checker" == "" ) then
+                    echo "No such directory."
+                    goto pokey_loop
+                endif
+
+                # Delete multiple "/" in the path, 
+                # e.g. convert "///usr//toukmond///" to "/usr/toukmond/"
+                set target_path = `echo "$target_path" | sed 's|//*|/|g'`
+
+                # Delete the last "/" in the path if it's not the root directory, 
+                # e.g. convert "/usr/toukmond/" to "/usr/toukmond"
+                if ( "$target_path" != "/" ) then
+                    set target_path = `echo "$target_path" | sed 's|/$||'`
+                endif
+
+                # Normalize target_path using real cd/pwd
+                # e.g. if target_path is "/usr/../rooms/./computer-room", after normalization, it will become "/rooms/computer-room"
+                set temp_path = `pwd -P` # save current path for recovery before command finish
+                cd "$pokey_root" >& /dev/null
+                cd ".$target_path" >& /dev/null
+
+                set full_path = `pwd -P` # full target path in real filesystem, e.g. "/home/toukmond/dunnet/filesystem/pokey/rooms/computer-room"
+
+                # If escaped from pokey root, clamp back to /
+                if ( "$full_path" == "$pokey_root" ) then
+                    set target_path = "/"
+                else
+                    echo "$full_path" | grep "^$pokey_root/" >& /dev/null
+                    if ( $status != 0 ) then
+                        set target_path = "/"
+                    else
+                        # Not escaped, get the relative path to pokey root as the final target_path
+                        set target_path = `echo "$full_path" | sed "s|$pokey_root||"`
+                    endif
+                endif
+
+                cd "$temp_path"
+
+                # Hard-coded ls outputs by pokey path
+                switch ("$target_path")
+                    case /:
+                        echo "total 4"
+                        echo "drwxr-xr-x  3 root     staff           512 Jan 1 1970 ."
+                        echo "drwxr-xr-x  3 root     staff          2048 Jan 1 1970 .."
+                        echo "drwxr-xr-x  3 root     staff          2048 Jan 1 1970 usr"
+                        echo "drwxr-xr-x  3 root     staff          2048 Jan 1 1970 rooms"
+                        breaksw
+
+                    case /usr:
+                        echo "total 4"
+                        echo "drwxr-xr-x  3 root     staff           512 Jan 1 1970 ."
+                        echo "drwxr-xr-x  3 root     staff          2048 Jan 1 1970 .."
+                        echo "drwxr-xr-x  3 root     staff          2048 Jan 1 1970 toukmond"
+                        breaksw
+
+                    case /usr/toukmond:
+                        echo "total 467"
+                        echo "drwxr-xr-x  3 toukmond restricted      512 Jan 1 1970 ."
+                        echo "drwxr-xr-x  3 root     staff          2048 Jan 1 1970 .."
+                        echo "-rwxr-xr-x  1 toukmond restricted    10423 Jan 1 1970 ls"
+                        echo "-rwxr-xr-x  1 toukmond restricted    10423 Jan 1 1970 ftp"
+                        echo "-rwxr-xr-x  1 toukmond restricted    10423 Jan 1 1970 echo"
+                        echo "-rwxr-xr-x  1 toukmond restricted    10423 Jan 1 1970 exit"
+                        echo "-rwxr-xr-x  1 toukmond restricted    10423 Jan 1 1970 cd"
+                        echo "-rwxr-xr-x  1 toukmond restricted    10423 Jan 1 1970 pwd"
+                        echo "-rwxr-xr-x  1 toukmond restricted    10423 Jan 1 1970 rlogin"
+                        echo "-rwxr-xr-x  1 toukmond restricted    10423 Jan 1 1970 ssh"
+                        echo "-rwxr-xr-x  1 toukmond restricted    10423 Jan 1 1970 uncompress"
+                        echo "-rwxr-xr-x  1 toukmond restricted    10423 Jan 1 1970 cat"
+
+                        # paper.o.Z
+                        if ( -f "$game_root/filesystem/pokey/usr/toukmond/paper.o.Z" ) then
+                            echo "-rwxr-xr-x  1 toukmond restricted        0 Jan 1 1970 paper.o.Z"    
+                        endif
+
+                        # output objects information in inventory
+                        foreach file ( `sh -c "ls -tr $game_root/filesystem/pokey/usr/toukmond/*.o 2>/dev/null"` )
+                            if ( -f "$file" && ! -l "$file" ) then
+                                set object = `basename "$file"`
+                                echo "-rwxr-xr-x  1 toukmond restricted        0 Jan 1 1970 ${object}"
+                            endif
+                        end
+                        breaksw
+                    
+                    case /rooms:
+                        echo "total 16"
+                        echo "drwxr-xr-x  3 root     staff           512 Jan 1 1970 ."
+                        echo "drwxr-xr-x  3 root     staff          2048 Jan 1 1970 .."
+                        echo "drwxr-xr-x  3 root     staff           512 Jan 1 1970 computer-room"
+                        echo "drwxr-xr-x  3 root     staff           512 Jan 1 1970 old-building-hallway"
+                        echo "drwxr-xr-x  3 root     staff           512 Jan 1 1970 bear-hangout"
+                        echo "drwxr-xr-x  3 root     staff           512 Jan 1 1970 se-nw-road"
+                        echo "drwxr-xr-x  3 root     staff           512 Jan 1 1970 building-front"
+                        echo "drwxr-xr-x  3 root     staff           512 Jan 1 1970 ne-sw-road"
+                        echo "drwxr-xr-x  3 root     staff           512 Jan 1 1970 fork"
+                        echo "drwxr-xr-x  3 root     staff           512 Jan 1 1970 e-w-dirt-road"
+                        echo "drwxr-xr-x  3 root     staff           512 Jan 1 1970 dead-end"
+                        echo "drwxr-xr-x  3 root     staff           512 Jan 1 1970 hidden-area"
+                        breaksw
+                    case /rooms/computer-room:
+                    case /rooms/old-building-hallway:
+                    case /rooms/bear-hangout:
+                    case /rooms/se-nw-road:
+                    case /rooms/building-front:
+                    case /rooms/ne-sw-road:
+                    case /rooms/fork:
+                    case /rooms/e-w-dirt-road:
+                    case /rooms/dead-end:
+                    case /rooms/hidden-area:
+                        echo "total 4"
+                        echo "drwxr-xr-x  3 root     staff           512 Jan 1 1970 ."
+                        echo "drwxr-xr-x  3 root     staff          2048 Jan 1 1970 .."
+                        echo "-rw-r--r--  1 root     staff          2048 Jan 1 1970 description"
+                        
+                        # output objects information in the room
+                        foreach file ( `sh -c "ls -tr $game_root/filesystem/pokey/${target_path}/*.o 2>/dev/null"` )
+                            if ( -f "$file" && ! -l "$file" ) then
+                                set object = `basename "$file"`
+                                echo "-rwxr-xr-x  1 toukmond restricted        0 Jan 1 1970 ${object}"
+                            endif
+                        end
+                        breaksw
+                    default:
+                        echo "No such directory."
+                        # In fact, it shouldn't run here!
+                        breaksw
+                    endsw
+                goto pokey_loop
+                
+            case cd: # cd <directory_path>, ( cd command logic is edited from ls )
+                
+                # In pokey, we don't realy cd into the directory. 
+                # Instead, we only adjust the pokey_pwd variable to track the current directory in pokey.
+
+                if ( "$#pokey_args" < 2 ) then
+                    echo "Usage: cd <path>"
+                    goto pokey_loop
+                endif
+
+                set cd_argument = "$pokey_args_padded[2]"
+
+                # Resolve target path
+                if ( "$cd_argument" =~ /* ) then
+                    # absolute path
+                    set target_path = "$cd_argument"
+                else
+                    # relative path
+                    if ( "$pokey_pwd" == "/" ) then
+                        set target_path = "/$cd_argument"
+                    else
+                        set target_path = "$pokey_pwd/$cd_argument"
+                    endif
+                endif
+
+                # Check the target path exists
+                set path_checker = `sh -c "cd '$pokey_root' && cd '.$target_path' 2>/dev/null && pwd -P"`
+                if ( "$path_checker" == "" ) then
+                    echo "No such directory."
+                    goto pokey_loop
+                endif
+
+                # Delete multiple "/" in the path, 
+                # e.g. convert "///usr//toukmond///" to "/usr/toukmond/"
+                set target_path = `echo "$target_path" | sed 's|//*|/|g'`
+
+                # Delete the last "/" in the path if it's not the root directory, 
+                # e.g. convert "/usr/toukmond/" to "/usr/toukmond"
+                if ( "$target_path" != "/" ) then
+                    set target_path = `echo "$target_path" | sed 's|/$||'`
+                endif
+
+                # Normalize target_path using real cd/pwd
+                # e.g. if target_path is "/usr/../rooms/./computer-room", after normalization, it will become "/rooms/computer-room"
+                set temp_path = `pwd -P`
+                cd "$pokey_root" >& /dev/null
+                cd ".$target_path" >& /dev/null
+
+                set full_path = `pwd -P`    # full target path in real filesystem, 
+                                            # e.g. "/home/toukmond/dunnet/filesystem/pokey/rooms/computer-room"
+
+                # If escaped from pokey root, clamp back to /
+                if ( "$full_path" == "$pokey_root" ) then
+                    set pokey_pwd = "/"
+                else
+                    echo "$full_path" | grep "^$pokey_root/" >& /dev/null
+                    if ( $status != 0 ) then
+                        set pokey_pwd = "/"
+                    else
+                        # Not escaped, get the relative path to pokey root as the final target_path
+                        set pokey_pwd = `echo "$full_path" | sed "s|$pokey_root||"`
+                        if ( "$pokey_pwd" == "" ) set pokey_pwd = "/"
+                    endif
+                endif
+
+                # Since in pokey, we don't realy go into the directory.
+                # Instead, we only adjust the pokey_pwd variable to track the current directory in pokey,
+                # so we need to cd back to saved path to make sure the real path is not changed after cd command.
+                cd "$temp_path"
+                goto pokey_loop
+            
+            case cat:
+                if ( "$#pokey_args" < 2 ) then
+                    echo "cat: missing file name"
+                else
+                    set temp = `pwd -P`
+                    cd "$game_root/filesystem/pokey/$pokey_pwd"
+                    cat "$pokey_args_padded[2]"
+                    cd "$temp"
+                endif
+                goto pokey_loop
+                    
+            case uncompress:
+                if ( "$#pokey_args" < 2 ) then
+                    echo "uncompress: missing file name"
+                else
+                    set temp = `pwd -P`
+                    cd "$game_root/filesystem/pokey/$pokey_pwd"
+                    if ( "$pokey_args_padded[2]" == "paper.o.Z" || "$pokey_args_padded[2]" == "paper.o.gz" ) then
+                        if ( -f paper.o.gz ) then
+                            gunzip paper.o.gz
+                        else if ( -f paper.o.Z ) then
+                            gunzip paper.o.Z
+                        else
+                            echo "uncompress: $pokey_args_padded[2]: No such file or directory"
+                        endif
+                    else
+                        if ( -f "$pokey_args_padded[2]" ) then
+                            echo "uncompress: $pokey_args_padded[2]: format not supported"
+                        else
+                            echo "uncompress: $pokey_args_padded[2]: No such file or directory"
+                        endif
+                    endif
+                    cd "$temp"
+                endif
+                goto pokey_loop
+            case ftp:
+                # TODO
+                # 不是教授規定的
+                goto pokey_ftp
+            default:
+                echo "$pokey_args[1]: command not found"
+                goto pokey_loop
+        endsw
+        
+    # Exit game commands
+    case exit:
+    case quit:
+        echo ""
+        echo "You have scored 0 out of a possible 90 points."
+        exit 0
+        
+    default:
+        echo "I don't understand that."
+        goto game_loop
+endsw
+
