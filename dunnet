@@ -2,9 +2,22 @@
 set nonomatch
 unset histchars
 
+# ==============================================
+# 
 # B113040045 許育菖
-# Unix HW1
+# UNIX HW
 # 2026/06/24
+
+
+# This is a simple text-based adventure game implemented in csh script, 
+# which is inspired by the classic game "Dunnet".
+# 
+# In this game, the player can move between rooms, interact with objects, and use a computer terminal to access a simulated UNIX environment called "pokey".
+# The final goal of this game is to find a secret area, and get the treasure there!
+# 
+# All the output messages of this game is identical to the original Dunnet.
+#
+# ==============================================
 
 # Ensure running from script directory
 set script_dir = `dirname "$0"`
@@ -33,20 +46,9 @@ else if ( ! -d filesystem ) then
     exit 1
 endif
 
-# Ensure coconut links exist
-if ( ! -e filesystem/pokey/rooms/dead-end/coconut ) then
-    ln -sf ../dead-end/trees filesystem/pokey/rooms/dead-end/coconut
-    ln -sf ../dead-end/trees filesystem/pokey/rooms/dead-end/coconuts
-    ln -sf ../e-w-dirt-road/trees filesystem/pokey/rooms/e-w-dirt-road/coconut
-    ln -sf ../e-w-dirt-road/trees filesystem/pokey/rooms/e-w-dirt-road/coconuts
-    ln -sf ../dead-end/trees filesystem/pokey/rooms/dead-end/coconuts
-    ln -sf ../e-w-dirt-road/trees filesystem/pokey/rooms/e-w-dirt-road/coconut
-    ln -sf ../e-w-dirt-road/trees filesystem/pokey/rooms/e-w-dirt-road/coconuts
-endif
-
 # Start room: Dead end
 cd filesystem/pokey/rooms/dead-end
-cd `pwd -P`
+cd `pwd -P` # delete this line
 
 # Global variables
 set computer_active = 0             # flag: whether the computer is active or not, used to determine if player can type commands into it
@@ -71,20 +73,30 @@ echo "There is a shovel here."
 game_loop:
 
 echo -n ">"
-set input = $<:q                                # read user input, ":q" make it read as a pure string, without it wiil cause error
-set input = `echo "$input" | tr 'A-Z' 'a-z'`    # convert input to lowercase, so that the game is case-insensitive
+set input = $<:q                                        # read user input, ":q" make it read as a pure string, without it wiil cause error
 
-set args = ( $input )   # split input into arguments
-set args_padded = ( $args "" "" "" "" ) # pad arguments to avoid csh parsing issues with missing arguments
-                                        # e.g. 
-                                        #   type cmd "get key"
-                                        #   then args[3] will be empty, if we try to access args[2], it will cause an error!
+# Prevent wildcard expansion while parsing user input
+set noglob
+
+set input = `echo "$input" | tr 'A-Z' 'a-z'`            # convert input to lowercase, so that the game is case-insensitive
+set input = `echo "$input" | sed 's/[ :;,][ :;,]*/ /g'` # replace the delimiters (space, colon, semicolon and comma) with space
+
+set args = ( $input:x )   # split input into arguments
+
 if ( "$#args" == 0 ) goto game_loop
 
+set args_padded = ( $args:q "" "" "" "" )   # pad arguments to avoid csh parsing issues with missing arguments
+                                            # e.g. 
+                                            #   type cmd "get key"
+                                            #   then args[3] will be empty, if we try to access args[3], it will cause "Subscript out of range" error!
+
+# Restore normal shell behavior
+unset noglob
+
+set cmd = "$args_padded[1]" # the first argument is the user command
 
 
-set cmd = "$args[1]"    # user command
-
+# Execute command
 switch ("$cmd")
     # Movement Commands
     case u: # up
@@ -173,6 +185,73 @@ switch ("$cmd")
         goto game_loop
 
 
+    # Examine command
+    case x:
+        # Too few arguments, then take it as "Look" command
+        if ( "$#args" < 2 ) then
+            goto skip_to_look_command
+        endif
+        
+        set item = "${args_padded[2]}"  # item name
+        set object = ""                 # object name (item name with .o suffix)
+
+        switch ("${item}")
+            # object files (*.o), need to add .o after ${item}
+            case lamp:
+            case bear:
+            case key:
+            case shovel:
+            case boulder:
+            case food:
+            case paper:
+                set object = "${item}.o"
+                breaksw
+            
+            case bracelet:
+            case emerald:
+                set object = "bracelet.o"
+                breaksw
+            
+            case board:
+            case card:
+            case chip:
+            case cpu:
+                set object = "board.o"
+                breaksw
+            
+            # normal files (non-object files), these files can't be interacted with.
+            case cabinet:
+            case computer:
+            case vax:
+            case coconut:
+            case coconuts:
+            case palm:
+            case trees:
+            case tree:
+            case bin:
+            case bins:
+                if ( -f "${item}" || -l "${item}" ) then
+                    cat "${item}"
+                else
+                    echo "I do not see that here."
+                endif
+                goto game_loop
+            default:
+                echo "I don't know what that is."
+                goto game_loop
+        endsw
+        
+        if ( -f "${object}" || -l "${object}" ) then
+            cat "${object}"
+        else if ( -f "../../usr/toukmond/${object}" || -l "../../usr/toukmond/${object}" ) then
+            cat "../../usr/toukmond/${object}"
+        else
+            echo "I don't see that here."
+        endif
+
+        goto game_loop
+    
+    skip_to_look_command:
     # Look command
     case l:
         # Dispslay room description
@@ -253,73 +332,6 @@ switch ("$cmd")
                 endsw
             end
         endif
-        goto game_loop
-
-    # Examine command
-    case x:
-        # Too few arguments.
-        if ( "$#args" < 2 ) then
-            echo "You must supply an object."
-            goto game_loop
-        endif
-        
-        set item = "${args_padded[2]}"    # item name
-        set object = ""                 # object name (item name with .o suffix)
-
-        switch ("${item}")
-            # object files (*.o), need to add .o after ${item}
-            case lamp:
-            case bear:
-            case key:
-            case shovel:
-            case boulder:
-            case food:
-            case paper:
-                set object = "${item}.o"
-                breaksw
-            
-            case bracelet:
-            case emerald:
-                set object = "bracelet.o"
-                breaksw
-            
-            case board:
-            case card:
-            case chip:
-            case cpu:
-                set object = "board.o"
-                breaksw
-            
-            # normal files (non-object files), these files can't be interacted with.
-            case cabinet:
-            case computer:
-            case vax:
-            case coconut:
-            case coconuts:
-            case palm:
-            case trees:
-            case tree:
-            case bin:
-            case bins:
-                if ( -f "${item}" || -l "${item}" ) then
-                    cat "${item}"
-                else
-                    echo "I do not see that here."
-                endif
-                goto game_loop
-            default:
-                echo "I don't know what that is."
-                goto game_loop
-        endsw
-        
-        if ( -f "${object}" || -l "${object}" ) then
-            cat "${object}"
-        else if ( -f "../../usr/toukmond/${object}" || -l "../../usr/toukmond/${object}" ) then
-            cat "../../usr/toukmond/${object}"
-        else
-            echo "I don't see that here."
-        endif
-
         goto game_loop
 
     # Get command
@@ -767,8 +779,6 @@ switch ("$cmd")
             goto pokey_loop
         endif
         
-
-        
         set login_times = 0 # count the login times
                             # if the player fail to login after 3 times, 
                             # the computer will turn off, and the player need to "type" again
@@ -784,9 +794,9 @@ switch ("$cmd")
         echo ""
 
         echo -n "login: "
-        set log_user = $<
+        set log_user = $<:q
         echo -n "password: "
-        set log_pass = $<
+        set log_pass = $<:q
 
         if ( "$log_user" != "toukmond" ) then
             echo "login incorrect."
@@ -823,13 +833,14 @@ switch ("$cmd")
     pokey_loop:
         echo -n '$ '
         set pokey_cmd = $<:q
-        set pokey_args = ( $pokey_cmd )
-        set pokey_args_padded = ( $pokey_args "" "" "" "" )
+        set pokey_args = ( $pokey_cmd:x )
         
         # Skip empty command
         if ( "$#pokey_args" == 0 ) goto pokey_loop
-        
-        switch ("$pokey_args[1]")
+ 
+        set pokey_args_padded = ( $pokey_args:q "" "" "" "" )
+
+        switch ("$pokey_args_padded[1]")
             case exit:
                 echo ""
                 echo "You step back from the console."
