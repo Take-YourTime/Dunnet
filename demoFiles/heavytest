@@ -1,0 +1,300 @@
+
+l
+look
+i
+inventory
+north
+south
+west
+up
+down
+ne
+sw
+get
+drop
+x
+read
+put
+put shovel
+put shovel in
+get nothing
+drop nothing
+x nothing
+read nothing
+xyzzy
+foobar
+help
+?
+12345
+get shovel extra words
+drop shovel extra words
+get *
+drop *
+x ?
+look; i
+look | i
+look > nowhere
+get shovel
+get all
+get shovel
+get boulder
+get card
+get cpu
+get vax
+get bear
+l
+look
+i
+get bear
+x bear
+read bear
+drop bear
+put bear in shovel
+put food in bear
+sw
+ne
+sw
+ne
+drop food
+drop food
+get food
+get food
+get key
+get bracelet
+get bins
+get trees
+get coconut
+e
+l
+look
+i
+n
+s
+ne
+nw
+se
+sw
+u
+d
+get boulder
+get boulder
+x boulder
+read boulder
+drop boulder
+put boulder in shovel
+put shovel in boulder
+get coconut
+x coconut
+read coconut
+get monkey
+drop monkey
+x monkey
+get all
+get all
+drop all
+get boulder
+get coconut
+x coconut
+x boulder
+x shovel
+x card
+get monkey
+x chicken
+drop donkey
+drop boulder
+get all
+e
+get card
+x card
+dig
+l
+look
+i
+dig
+dig
+dig
+get card
+get card
+x card
+read card
+drop card
+get card
+get all
+n
+s
+e
+u
+d
+put card in shovel
+put shovel in card
+x card
+get card
+x card
+i
+x shovel
+se
+drop lamp
+drop shovel
+drop chip
+ne
+nw
+se
+get all
+nw
+w
+drop food
+drop all
+drop lamp
+drop shovel
+drop board
+i
+e
+w
+get all
+e
+se
+se
+drop lamp
+drop shovel
+drop card
+nw
+se
+get all
+nw
+se
+get bear
+drop food
+l
+sw
+get all
+ne
+drop emerald
+drop cpu
+drop lamp
+drop shovel
+i
+sw
+ne
+get all
+nw
+ne
+nw
+ne
+ne
+put lamp in shovel
+put boulder in shovel
+put shovel in boulder
+ne
+e
+put key in bin
+l
+look
+i
+n
+s
+e
+w
+ne
+nw
+se
+sw
+u
+d
+x bin
+x bins
+get bin
+get bins
+put key in bin
+put bin in key
+drop key
+get key
+drop key
+get all
+put bin in key
+drop key
+put key in bin
+get all
+w
+w
+drop key
+put key in vax
+put key in boulder
+drop chip
+l
+look
+i
+x vax
+read vax
+get vax
+drop vax
+type
+type
+put key in vax
+put shovel in vax
+put lamp in vax
+put chip in vax
+put chip in vax
+get chip
+put chip in vax
+get all
+put chip in vax
+l
+look
+i
+x vax
+read vax
+put chip in vax
+get chip
+get chip
+e
+w
+i
+x paper
+type
+toukmond
+robert
+pwd
+ls
+ls -l
+ls -a
+ls *.Z
+ls no-such-file
+echo pokey stress test
+echo alpha beta gamma
+echo '*'
+echo test | cat
+echo redirected > /dev/null
+cat no-such-file
+cd .
+pwd
+cd /definitely-not-a-directory
+pwd
+true
+false
+nosuchcommand
+uncompress no-such-file.Z
+uncompress paper.o.Z
+uncompress paper.o.gz
+ls
+ls -l
+uncompress paper.o.Z
+cat paper.o
+exit
+e
+w
+i
+type
+toukmond
+robert
+pwd
+ls
+ls -l
+cat paper.o
+echo second login complete
+nosuchcommand_again
+exit
+i
+x paper
+read paper
+l
+quit

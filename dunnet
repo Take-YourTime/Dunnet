@@ -186,9 +186,51 @@ switch ("$cmd")
 
     # Examine command
     case x:
-        # Too few arguments, then take it as "Look" command
+    case examine:
+    # Look command
+    case l
+    case look:
+    # read command
+    case read:
+        # If there is no argument, display the current room description
         if ( "$#args" < 2 ) then
-            goto skip_to_look_command
+            # Dispslay room description
+            foreach f ( description .*description )
+                if ( -f $f ) cat $f
+            end
+
+            # Display objects on ground
+            foreach object (`sh -c 'ls -tr *.o 2>/dev/null'`)
+                switch ($object)
+                    case shovel.o:
+                        echo "There is a shovel here."
+                        breaksw
+                    case boulder.o:
+                        echo "There is a large boulder here."
+                        breaksw
+                    case food.o:
+                        echo "There is some food here."
+                        breaksw
+                    case bear.o:
+                        echo "There is a ferocious bear here!"
+                        breaksw
+                    case key.o:
+                        echo "There is a shiny brass key here."
+                        breaksw
+                    case bracelet.o:
+                        echo "There is an emerald bracelet here."
+                        breaksw
+                    case lamp.o:
+                        echo "There is a lamp nearby."
+                        breaksw
+                    case board.o:
+                        echo "There is a CPU card here."
+                        breaksw
+                    default:
+                        # ignore the object, since it is a symbolic link
+                endsw
+            end
+            goto game_loop
         endif
         
         set item = "${args_padded[2]}"  # item name
@@ -249,48 +291,6 @@ switch ("$cmd")
         endif
 
         goto game_loop
-    
-    skip_to_look_command:
-    # Look command
-    case l:
-        # Dispslay room description
-        foreach f ( description .*description )
-            if ( -f $f ) cat $f
-        end
-
-        # Display objects on ground
-        foreach object (`sh -c 'ls -tr *.o 2>/dev/null'`)
-            switch ($object)
-                case shovel.o:
-                    echo "There is a shovel here."
-                    breaksw
-                case boulder.o:
-                    echo "There is a large boulder here."
-                    breaksw
-                case food.o:
-                    echo "There is some food here."
-                    breaksw
-                case bear.o:
-                    echo "There is a ferocious bear here!"
-                    breaksw
-                case key.o:
-                    echo "There is a shiny brass key here."
-                    breaksw
-                case bracelet.o:
-                    echo "There is an emerald bracelet here."
-                    breaksw
-                case lamp.o:
-                    echo "There is a lamp nearby."
-                    breaksw
-                case board.o:
-                    echo "There is a CPU card here."
-                    breaksw
-                default:
-                    # ignore the object, since it is a symbolic link
-            endsw
-        end
-        goto game_loop
-
     
     # Inventory command
     case i:
@@ -1132,6 +1132,7 @@ switch ("$cmd")
                 endif
                 
                 set uncompress_file_path = "$game_root/filesystem/pokey/$pokey_pwd/$pokey_args_padded[2]"
+
                 if ( "$pokey_args_padded[2]" == "paper.o.Z" || "$pokey_args_padded[2]" == "paper.o.gz" ) then
                     if ( -f "$uncompress_file_path" && ! -l "$uncompress_file_path" ) then
                         gunzip "$uncompress_file_path" # uncompress

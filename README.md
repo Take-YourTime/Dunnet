@@ -38,7 +38,53 @@ chmod +x dunnet
 
 ### 測試步驟
 
-( TODO )
+請先確保當前Linux或UNIX已經下載`emacs`：
+
+```bash
+sudo apt update && sudo apt install -y emacs
+```
+
+接著將 dunnet 與 filesystem.tar 同一個資料夾中。
+
+開啟terminal輸入：
+
+```bash
+./dunnet
+```
+
+即可開始遊戲。
+
+#### 檢查自製dunnet輸出結果
+
+若是想知道自製 dunnet 與原始 dunnet 是否一致，可以按照以下步驟執行。
+
+首先接著將 dunnet、filesystem.tar 與三份測試檔案放入同一個資料夾中。
+
+開啟terminal輸入：
+
+```bash
+./dunnet < testactions > my_output.txt
+```
+
+這會將測試結果輸出到 my_output.txt 當中，testactions可更換成其他的測試檔案名稱。
+
+然後複製所有測試檔案到另外一個資料夾。
+
+開啟terminal，輸入：
+
+```bash
+emacs -batch -l dunnet < testactions > standard_output.txt
+```
+
+這會將原始dunnet的執行結果出到 standard_output.txt 當中。
+
+接著我們 my_output.txt 和 standard_output.txt 移到同一個資料夾，開啟 terminal 輸入：
+
+```bash
+diff -y -w my_output.txt standard_output.txt
+```
+
+即可查看自製 dunnet 執行結果與原始 dunnet 執行結果的差異。
 
 ### 程式初始化流程說明
 
@@ -323,9 +369,9 @@ $args_padded[4]
 
 | 指令 | 作用 | 實作方式 |
 | --- | --- | --- |
-| `n`、`s`、`e`、`w`、`ne`、`nw`、`se`、`sw`、`u`、`d` | 移動到其他房間 | 檢查目前資料夾中是否存在相同名稱的 symbolic link，存在時使用 `cd` 進行移動，並透過 `pwd -P` 取得該房間絕對路徑。 |
-| `l` | look，用於查看目前房間 | 讀取目前房間中的 `description`，再列出房間內的 `.o` 檔案，將檔名轉換為對應的物品描述。 |
-| `x [<item>]` | examine，檢查指定物品；若無輸入物品名稱，則變成輸出當前房間資訊，效果與`l`相同 | 根據玩家輸入的名稱，使用 `cat` 輸出對應物品的 `.o` 檔案 *(或一般檔案)* 中的文字內容。 |
+| `n`、`s`、`e`、`w`、</br>`ne`、`nw`、`se`、`sw`、</br>`u`、`d` | 移動到其他房間 | 檢查目前資料夾中是否存在相同名稱的 symbolic link，存在時使用 `cd` 進行移動，並透過 `pwd -P` 取得該房間絕對路徑。 |
+| `l`</br>`look`</br>`x`</br>`examine`</br>`read` | 用於查看目前房間詳細資訊 | 讀取目前房間中的 `description`，再讀取房間內的所有 `.o` 檔案，將檔名轉換為對應的物品描述並輸出。 |
+| `l <item>`</br>`look <item>`</br>`x <item>`</br>`examine <item>`</br>`read <item>`</br> | examine，檢查指定物品；若無輸入物品名稱，則變成輸出當前房間資訊，效果與`l`相同 | 根據玩家輸入的名稱，使用 `cat` 輸出對應物品的 `.o` 檔案 *(或一般檔案)* 中的文字內容。 |
 | `i` | 查看 inventory | 列出 `../../usr/toukmond/`中，所有 `.o` 檔案的名稱，忽略 symbolic link。 |
 | `get <item>` | 撿取物品 | 使用 `mv` 將目前房間內的指定物品移動到 `../../usr/toukmond/`，再用 `touch` 更新 timestamp。 |
 | `get all` | 撿取房間內所有可撿取物品 | 使用 `ls -tr *.o` 找出物品，跳過隱藏物品 *(以`.`作為檔名開頭)* 、不可撿取物品，再依序移動到 inventory — `../../usr/toukmond/`。    若有撿取到帶有 symbolic link 的物品 (例如: cpu、bracelet)，需要同步移動 symbolic link 到 inventory 中。 |

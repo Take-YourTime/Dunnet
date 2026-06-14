@@ -1,0 +1,118 @@
+get shovel
+get all
+get shovel
+get boulder
+get card
+get cpu
+get vax
+get bear
+get food
+get key
+get bracelet
+get bins
+get trees
+get coconut
+e
+get boulder
+get coconut
+x coconut
+x boulder
+x shovel
+x card
+get monkey
+x chicken
+drop donkey
+drop boulder
+get all
+e
+get card
+x card
+dig
+x card
+get card
+x card
+i
+x shovel
+se
+drop lamp
+drop shovel
+drop chip
+ne
+nw
+se
+get all
+nw
+w
+drop food
+drop all
+drop lamp
+drop shovel
+drop board
+i
+e
+w
+get all
+e
+se
+se
+drop lamp
+drop shovel
+drop card
+nw
+se
+get all
+nw
+se
+get bear
+drop food
+l
+sw
+get all
+ne
+drop emerald
+drop cpu
+drop lamp
+drop shovel
+i
+sw
+ne
+get all
+nw
+ne
+nw
+ne
+ne
+put lamp in shovel
+put boulder in shovel
+put shovel in boulder
+ne
+e
+put key in bin
+put bin in key
+drop key
+put key in bin
+get all
+w
+w
+drop key
+put key in vax
+put key in boulder
+drop chip
+put chip in vax
+get all
+put chip in vax
+get chip
+e
+w
+i
+x paper
+type
+toukmond
+robert
+uncompress paper.o.Z
+uncompress paper.o.gz
+exit
+e
+w
+i
+quit
