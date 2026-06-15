@@ -1,6 +1,6 @@
 # Dunnet-like Text Adventure Game
 
-> > [English] | [繁體中文](README_zh-TW.md)
+> [English] | [繁體中文](README_zh-TW.md)
 
 Main program file: `dunnet`
 
