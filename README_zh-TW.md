@@ -1,5 +1,7 @@
 # Dunnet-like Text Adventure Game
 
+> [English](README.md) | [繁體中文]
+
 主程式檔案：`dunnet`
 
 使用語言：C Shell (`csh` / `tcsh`)
