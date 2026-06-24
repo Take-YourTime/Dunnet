@@ -60,7 +60,7 @@ set visited_rooms = ( `pwd -P` )    # store the physical path of visited rooms, 
 #   The starting point is set at "Dead end",
 #   so just display the description and the shovel object directly, 
 #   without checking for visited status and the object information.
-#   If  starting point is changeg in future, 
+#   If starting point is changed in future, 
 #   the below code should be edited to reflect the new description! 
 echo ""
 cat description
