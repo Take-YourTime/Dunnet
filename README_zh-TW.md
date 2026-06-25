@@ -4,7 +4,7 @@
 
 主程式檔案：`dunnet`
 
-使用語言：C Shell (`csh` / `tcsh`)
+使用語言：C Shell (`csh`)
 
 作業系統：Ubuntu 20.04.6 LTS
 
